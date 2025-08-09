@@ -1,0 +1,65 @@
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from statsmodels.tsa.seasonal import seasonal_decompose
+from pandas.plotting import autocorrelation_plot
+import matplotlib.dates as mdates
+
+
+np.random.seed(42)
+date_rng = pd.date_range(start='2020-01-01', end='2022-12-31', freq='D')
+data = np.random.normal(loc=0.0, scale=1.0, size=len(date_rng)).cumsum()
+
+df = pd.DataFrame(date_rng, columns=['date'])
+df['value'] = data + 10*np.sin(np.linspace(0, 3*np.pi, len(date_rng)))  # add seasonality
+df.set_index('date', inplace=True)
+
+print(df.head())
+
+plt.figure(figsize=(12, 5))
+plt.plot(df.index, df['value'], label='Value')
+plt.title('Time Series Line Plot')
+plt.xlabel('Date')
+plt.ylabel('Value')
+plt.legend()
+plt.show()
+
+rolling_mean = df['value'].rolling(window=30).mean()
+rolling_std = df['value'].rolling(window=30).std()
+
+plt.figure(figsize=(12, 5))
+plt.plot(df['value'], label='Original', alpha=0.5)
+plt.plot(rolling_mean, label='30-day Rolling Mean', color='orange')
+plt.plot(rolling_std, label='30-day Rolling Std', color='red')
+plt.title('Rolling Statistics')
+plt.legend()
+plt.show()
+
+result = seasonal_decompose(df['value'], model='additive', period=365)
+result.plot()
+plt.show()
+
+plt.figure(figsize=(10, 4))
+autocorrelation_plot(df['value'])
+plt.title('Autocorrelation')
+plt.show()
+
+df_monthly = df.copy()
+df_monthly['month'] = df_monthly.index.month
+df_monthly['year'] = df_monthly.index.year
+pivot_table = df_monthly.pivot_table(values='value', index='month', columns='year', aggfunc='mean')
+
+plt.figure(figsize=(8, 6))
+sns.heatmap(pivot_table, annot=True, fmt=".1f", cmap='coolwarm')
+plt.title('Monthly Average Heatmap')
+plt.show()
+
+plt.figure(figsize=(12, 5))
+plt.plot(df['2021-01-01':'2021-06-30'], label='Jan-Jun 2021')
+plt.title('Zoomed-in View')
+plt.xlabel('Date')
+plt.ylabel('Value')
+plt.legend()
+plt.show()
